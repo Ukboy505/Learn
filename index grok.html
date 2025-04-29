@@ -1,0 +1,421 @@
+<!<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>
+            Learn Ethers.js
+        </title>
+    </head>
+    <body>
+        <button onclick="connectWallet()">Connect MetaMask</button>
+        <p id="address"></p>
+        <p id="balance"></p>
+        <p id="connection-success" style="color: green"></p>
+        <p id="connection-error" style="color: red"></p>
+        
+        <p id="contract-set"></p>
+        <p id="contract-error"></p>
+        
+                <script type="module">
+        // Importing ethers.js
+        import {ethers} from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js";
+            
+    let provider, signer, address, tokenContract, saleContract, tokenRead, tokenWrite, saleRead, saleWrite, testAbi, saleAbi;
+    
+
+    testAbi = [
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "initialSupply",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "allowance",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "needed",
+				"type": "uint256"
+			}
+		],
+		"name": "ERC20InsufficientAllowance",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "sender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "balance",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "needed",
+				"type": "uint256"
+			}
+		],
+		"name": "ERC20InsufficientBalance",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "approver",
+				"type": "address"
+			}
+		],
+		"name": "ERC20InvalidApprover",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "receiver",
+				"type": "address"
+			}
+		],
+		"name": "ERC20InvalidReceiver",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "sender",
+				"type": "address"
+			}
+		],
+		"name": "ERC20InvalidSender",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			}
+		],
+		"name": "ERC20InvalidSpender",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Approval",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Transfer",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			}
+		],
+		"name": "allowance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "approve",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "decimals",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "name",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "symbol",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalSupply",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "transfer",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "transferFrom",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+];
+    saleAbi = [{"inputs":[{"internalType":"address","name":"_token","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"approver","type":"address"},{"indexed":false,"internalType":"address","name":"paymentToken","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Approved","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"uint256","name":"paymentAmount","type":"uint256"}],"name":"FundsSecured","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"minBuyToReward","type":"uint256"}],"name":"MinBuyToRewardRemoved","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"minBuyToReward","type":"uint256"}],"name":"MinBuyToRewardSet","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":false,"internalType":"uint256","name":"tokenAmount","type":"uint256"}],"name":"NotEligible","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"paymentToken","type":"address"}],"name":"PaymentTokenAdded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"paymentToken","type":"address"}],"name":"PaymentTokenRemoved","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"rate","type":"uint256"},{"indexed":false,"internalType":"address","name":"paymentToken","type":"address"}],"name":"RateSet","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"paymentToken","type":"address"}],"name":"RateRemoved","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":true,"internalType":"address","name":"paymentToken","type":"address"},{"indexed":false,"internalType":"uint256","name":"tokenAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"rewardAmount","type":"uint256"}],"name":"RewardGranted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"paymentToken","type":"address"},{"indexed":false,"internalType":"uint256","name":"reward","type":"uint256"}],"name":"RewardSet","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"paymentToken","type":"address"}],"name":"RewardRemoved","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":false,"internalType":"uint256","name":"tokenAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"paymentAmount","type":"uint256"}],"name":"TokenPurchased","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"address","name":"owner","type":"address"}],"name":"Withdrawn","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"account","type":"address"}],"name":"Paused","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"account","type":"address"}],"name":"Unpaused","type":"event"},{"inputs":[{"internalType":"address","name":"paymentToken","type":"address"}],"name":"addPaymentToken","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"paymentToken","type":"address"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"}],"name":"buyWithToken","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"buyWithNative","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"minBuyToReward","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"paymentToken","type":"address"}],"name":"paymentTokens","outputs":[{"internalType":"bool","name":"isAccepted","type":"bool"},{"internalType":"uint256","name":"rate","type":"uint256"},{"internalType":"uint256","name":"reward","type":"uint256"},{"internalType":"uint256","name":"totalRaised","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"removeMinBuyToReward","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"paymentToken","type":"address"}],"name":"removePaymentToken","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"paymentToken","type":"address"}],"name":"removeRate","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"paymentToken","type":"address"}],"name":"removeReward","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"saleToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_minBuyToReward","type":"uint256"}],"name":"setMinBuyToReward","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"paymentToken","type":"address"},{"internalType":"uint256","name":"rate","type":"uint256"}],"name":"setRate","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"paymentToken","type":"address"},{"internalType":"uint256","name":"reward","type":"uint256"}],"name":"setReward","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"token","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalRewarded","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSold","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_tokenAddress","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"stateMutability":"payable","type":"receive"}];
+            
+            
+ // Connect MetaMask Walllet
+ async function connectWallet() {
+     if (window.ethereum) {
+        try {
+         provider = await new ethers.BrowserProvider(window.ethereum);
+         address = provider.getAddress();
+         document.getElementById("connection-success").innerHTML(`Connected to: ${address}`);
+         signer = await provider.getSigner();
+         
+         const balance = await provider.getBalance(address);
+         const ethBalance = await ethers.formatEther(balance);
+         console.log(`The balance of ${address} is ${ethBalance} ETH`);
+         document.getElementById("balance").innerHTML(`Balance is: ${ethBalance} ETH`);
+             } catch (error) {
+                console.error(`An error occured: `, error.message);
+             }
+         } else {
+             console.log("Please install MetaMask extension on your browser");
+             document.getElementById("connection-error").innerHTML("Please install MetaMask extension on your browser");
+         }
+    }
+    
+    // Setting token contract address and creating token instance 
+    async function setTokenAddress(tokenAddress) {
+        if (typeof tokenAddress === "string" && tokenAddress.startsWith("0x")) {
+            
+            try {
+                
+            tokenContract = tokenAddress;
+            
+            tokenRead = await new ethers.Contract(tokenContract, testAbi, provider);
+            tokenWrite = await new ethers.Contract(tokenContract, testAbi, signer);
+            console.log(`Token address set to ${tokenContract}`);
+            document.getElementById(contract-set).innerHTML(`Token address set to ${tokenContrac}`);
+            } catch (error) {
+                console.error(`Token address must be a string that starts with "0x": `, error.message);
+            }
+        } else {
+            
+            console.log("Input not a valid Contract address: ", tokenAddress);
+            document.getElementById(contract-error).innerHTML(`Input not a valid Contract address: ${tokenAddress}`);
+        }
+    }
+    
+    // Setting Sale Contract Address and creating sale instance
+    async function setSaleAddress (saleAddress) {
+    
+    if (typeof saleAddress === "string" && saleAddress.startsWith("0x")) {
+            
+            try {
+                
+    saleContract = saleAddress;
+    
+    // Reading Sale Contract data
+    saleRead = new ethers.Contract(saleContract, saleAbi, provider);
+    
+    // Writing Sale Contract data
+    saleWrite = new ethers.Contract(saleContract, saleAbi, signer);
+    
+    console.log(`Sale address set to ${saleContract}`);
+            document.getElementById(contract-set).innerHTML(`Sale address set to ${saleContrac}`);
+            } catch (error) {
+                console.error(`Sale address must be a string that starts with "0x": `, error.message);
+            }
+        } else {
+            
+            console.log("Input not a valid Contract address: ", saleAddress);
+            document.getElementById(contract-error).innerHTML(`Input not a valid Contract address: ${saleAddress}`);
+        }
+    }
+      </script>
+    </body>
+</html>
