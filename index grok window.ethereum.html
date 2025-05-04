@@ -1,0 +1,256 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>
+            Learn Ethers.js
+        </title>
+    </head>
+    <body>
+        <header>
+            <p id="connected-address" display="none"></p>
+        </header>
+        <!--
+        <button id="connect-wallet" onclick="connectWallet()">Connect MetaMask</button>
+        -->
+        
+<table>
+  <th>Sale Details</th>
+    <tr><td id="sale-status" width="90%" align="center" style="display: none">Sale Status: Connect wallet</td></tr>
+    <tr><td>Sale Contract</td><td id="sale-contract" style="display: none">Connect wallet</td></tr>
+    <tr><td>Token Contract</td><td id="token-contract" style="display: none">Connect wallet</td></tr>
+    <tr><td>Total Sold</td><td id="total-sold" style="display: none">Connect wallet</td></tr>
+    <tr><td>Total Unsold</td><td id="total-unsold" style="display: none">Connect wallet</td></tr>
+    <tr><td>Total Rewarded</td><td id="total-rewarded" style="display: none">Connect wallet</td></tr>
+    <tr><td>Min. Buy To Reward</td><td id="min-buy-to-reward" style="display: none">Connect wallet</td></tr>
+    <tr><td></td><td id=""></td></tr>
+    <tr><td></td><td id=""></td></tr>
+    </table>
+        
+    
+        
+        Polygon balance
+        <p id="pol-balance"></p>
+        <p id="connection-success" style="color: green"></p>
+        <p id="connection-error" style="color: red"></p>
+        
+        <p id="contract-set" style="color: green"></p>
+        <p id="contract-error" style="color: red"></p>
+        <p id="tx-success" style="color: green"></p>
+        <p id="tx-failed" style="color: red"></p>
+        <p id="update-payment-token-list" style="color: green"></p>
+        
+        
+    <!--
+    <script src="/storage/0C9B-5FD3/Access And Retrieval 23 Aug 2022 - 13 Dec 2024/Docs/Developing/JavaScript/Learning Ethers.js/Grok/My practice/contracts.js" type="text/javascript"></script>
+    -->
+    
+  <script type="module">
+
+        // Importing ethers.js
+        import {ethers} from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js";
+        
+    // Declaring Global variables
+    // Contract addresses and ABIs already known
+    // Sale token contract address
+    const tokenContractAddress = "0x9a15aca3b949b057ff7c99df82675a4e3f4b553d";
+    // GrandSale contract address
+    const saleContractAddress = "0x65ed5aa09d34959214bdbb8b634e486081447e36";
+    // ERC20 contract ABI for sale token and ERC20 payment tokens
+    const ERC20Abi = "I will replace this";
+    // GrandSale contract ABI
+    const saleAbi = "I will replace this"; 
+    // Chain Id
+    const chainId = "80002";
+    
+    // Declaring provider, signer and address of the connected wallet
+    let provider, signer, connectedAddress = null;
+    
+    // Reading sale token contract state
+    let tokenRead;
+    // Writing sale token contract state
+    let tokenWrite;
+    
+    // Reading from GrandSale contract state
+    let saleRead;
+    // Writing to GrandSale contract state
+    let saleWrite;
+    
+    // Polygon balance of connected wallet 
+    // Formatted POL balance (user-friendly view)
+    let polBalance;
+    // POL balance in WEI
+    let balance;
+    
+
+    // Sale token details
+    const name;
+    const symbol;
+    const decimals;
+    
+    // Payment tokens list
+    let paymentTokenList;
+    
+    // Changing states updated dynamically
+    let totalSold;
+    let totalUnsold;
+    let totalRewarded;
+    let minBuyToReward;
+    
+    
+ // Connect MetaMask Walllet
+ async function connectWallet() {
+     if (window.ethereum) {
+        try {
+         provider = new ethers.BrowserProvider(window.ethereum);
+         
+         signer = await provider.getSigner();
+         connectedAddress = await signer.getAddress();
+         document.getElementById("connection-success").innerText = `Connected to: ${connectedAddress}`;
+         document.getElementById("connected-address").innerText = connectedAddress ? `Connected to: ${connectedAddress}` : "Connect wallet";
+         
+         // POL balance in wei
+         balance = await provider.getBalance(connectedAddress);
+         // Formatted POL balance
+         polBalance = await ethers.formatEther(balance);
+         console.log(`The balance of ${connectedAddress} is ${polBalance} POL`);
+         // Update UI with the formatted POL balance
+         document.getElementById("pol-balance").textContent = `Balance is: ${polBalance} POL`;
+         
+             // Reading and writing sale token Contract data
+    if (provider) {
+        
+        // Creating sale token contract instance
+        tokenRead = new ethers.Contract(tokenContractAddress, ERC20Abi, provider);
+        tokenWrite = new ethers.Contract(tokenContractAddress, ERC20Abi, signer);
+        console.log(`Sale token address set to ${tokenContractAddress}`);
+        document.getElementById("contract-set").textContent = `Token address set to ${tokenContract}`;
+        } else {
+            
+            document.getElementById("contract-error").textContent = `Sale token contract failed to connect`;
+            console.log("Sale token contract failed to connect");
+            throw new Error (`Sale token contract failed to connect`);
+         }
+
+    
+    // Reading and writing GrandSale Contract data
+    if (provider) {
+    
+    // Creating Grandsale contract instance
+    saleRead = new ethers.Contract(saleContractAddress, saleAbi, provider);
+    
+    // Writing Sale Contract data
+    saleWrite = new ethers.Contract(saleContractAddress, saleAbi, signer);
+    
+    console.log(`GrandSale address set to ${saleContractAddress}`);
+            document.getElementById("contract-set").textContent = `Sale address set to ${saleContractAddress}`;
+    } else {
+            document.getElementById("contract-error").textContent = `GrandSale contract failed to connect`;
+        console.log("GrandSale contract failed to connect");
+        throw new Error (`GrandSale contract failed to connect`)
+    }
+             } catch (error) {
+                console.error(`An error occured: `, error.message);
+             }
+         } else {
+             console.log("Please install MetaMask extension on your browser");
+             document.getElementById("connection-error").textContent = "Please install MetaMask extension on your browser";
+         }
+    }
+    
+    // Getting sale token details
+    async function getSaleTokenDetails () {
+        name = await tokenRead.name();
+        symbol = await tokenRead.symbol();
+        decimals = await tokenRead.decimals();
+    }
+    
+    
+    // Getting GrandSale contract details
+    async function updateGrandSaleTable () {
+
+        // Predefined Addresses
+        // GrandSale Contract Address already assigned
+        document.getElementById("sale-contract").innerText = `${saleContractAddress}`;
+        // Sale token Contract Address already assigned
+        document.getElementById("token-contract").innerText = `${tokenContractAddress}`;
+
+         // Formatted variables are user readable
+        // Total Sold in wei
+         totalSoldInWei= await saleRead.tokenInfo.totalSold;
+        // Total Sold in ether since sale token has 18 decimals
+        totalSold = await ethers.formatEther(totalSoldInWei);
+         document.getElementById("total-sold").innerText = `${totalSold}`;
+        // Remaining sale token balance of the sale contract is the total unsold
+        totalUnsoldInWei = await tokenRead.balanceOf(saleContractAddress);
+        // Making total unsold user-readable
+        totalUnsold = await ethers.formatEther(totalUnsoldInWei);
+        document.getElementById("total-unsold").innerText = `${totalUnsold}`;
+        // Total rewards issued in wei
+        totalRewardedInWei = await saleRead.tokenInfo.totalRewarded;
+        // User-readable total rewards issued
+        totalRewarded = await ethers.formatEther(totalRewardedInWei);
+        document.getElementById("total-rewarded").innerText = `${totalRewarded}`;
+        // Minimum token purchase amount for reward eligibility in wei
+        minBuyToRewardInWei = await saleRead.tokenInfo.minBuyToReward;
+        // User-friendly minimum reward eligibility
+        minBuyToReward = await ethers.formatEther(minBuyToRewardInWei);
+        document.getElementById("min-buy-to-reward").innerText = `${minBuyToReward}`;
+        
+    }
+    
+ // Establishing MetaMask wallet connection
+ connectWallet();
+ 
+ 
+  // Buying with POL
+  async function buyWithNative(paymentAmount) {
+      if (paymentAmount !== "0") {
+      
+      const paymentAmount = ethers.parseEther("amount");
+      
+      const tx = await saleWrite.buyWithNative(paymentAmount);
+      
+      const receipt = await tx.wait();
+      
+      console.log(receipt);
+      
+      document.getElementById("tx-success").textContent = `Transaction successful`;
+        } else {
+            
+            console.log("Transaction failed");
+            document.getElementById("tx-failed").textContent = `Transaction failed`;
+        }
+      
+  }
+    
+ // Buying with ERC20 Payment tokens
+ async function buyWithToken (paymentToken, paymentAmount) {
+        if (typeof paymentToken === "string" && paymentToken && paymentAmount !== "0") {
+    
+    const paymentTokenContract = new ethers.Contract(paymentToken, testABI, provider);
+    
+        const paymentAmount = ethers.utils.parseUnits(paymentAmount, );
+            
+         const tx = await saleWrite.buyWithToken(paymentToken, paymentAmount);
+         const receipt = await tx.wait();
+         console.log(receipt);
+         
+         document.getElementById("tx-success").textContent = `Transaction successful`;
+        } else {
+            
+            console.log("Transaction failed");
+            document.getElementById("tx-failed").textContent = `Transaction failed`;
+        }
+    }
+    
+    // Update payment tokens list
+    async function updatePaymentTokens () {
+        paymentTokenList = await tokenRead.paymentTokens();
+        document.getElementById("update-payment-token-list");
+        console.log("Payment token list uppdated");
+    }
+
+
+      </script>
+    </body>
+</html>
