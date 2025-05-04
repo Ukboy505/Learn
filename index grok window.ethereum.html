@@ -7,7 +7,7 @@
     </head>
     <body>
         <header>
-            <p id="connected-address" display="none"></p>
+            <p id="connected-address" display="none"></p> <p id="pol-balance"></p>
         </header>
         <!--
         <button id="connect-wallet" onclick="connectWallet()">Connect MetaMask</button>
@@ -22,14 +22,28 @@
     <tr><td>Total Unsold</td><td id="total-unsold">Connect wallet</td></tr>
     <tr><td>Total Rewarded</td><td id="total-rewarded">Connect wallet</td></tr>
     <tr><td>Min. Buy To Reward</td><td id="min-buy-to-reward">Connect wallet</td></tr>
-    <tr><td></td><td id=""></td></tr>
-    <tr><td></td><td id=""></td></tr>
     </table>
+    
+    
+    <table>
+    <th>Sale Token Details</th>
+    <tr><td>Name</td><td id="name"></td></tr>
+    <tr><td>Symbol</td><td id="symbol"></td></tr>
+    <tr><td>Decimals</td><td id="decimals"></td></tr>
+    <tr><td>Total Supply</td><td id="total-supply"></td></tr>
+    <tr><td>Network</td><td id="network"></td></tr>
+    </table>
+    
+    <!-- Table, row and data template
+        <table>
+        <th></th>
+        <tr><td></td><td id=""></td></tr>
+        </table>
+        -->
         
     
         
-        Polygon balance
-        <p id="pol-balance"></p>
+        
         <p id="connection-success" style="color: green"></p>
         <p id="connection-error" style="color: red"></p>
         
@@ -83,9 +97,11 @@
     
 
     // Sale token details
-    const name;
-    const symbol;
-    const decimals;
+    let name;
+    let symbol;
+    let decimals;
+    let totalSupplyInWei; // Total supply in WEI
+    let totalSupply; // User-readable total supply
     
     // Payment tokens list
     let paymentTokenList;
@@ -114,7 +130,7 @@
          polBalance = await ethers.formatEther(balance);
          console.log(`The balance of ${connectedAddress} is ${polBalance} POL`);
          // Update UI with the formatted POL balance
-         document.getElementById("pol-balance").textContent = `Balance is: ${polBalance} POL`;
+         document.getElementById("pol-balance").textContent = `Balance: ${polBalance} POL`;
          
              // Reading and writing sale token Contract data
     if (provider) {
@@ -157,12 +173,35 @@
          }
     }
     
+     // Establishing MetaMask wallet connection
+     connectWallet();
+ 
+    
     // Getting sale token details
     async function getSaleTokenDetails () {
+        try {
         name = await tokenRead.name();
+        document.getElementById("name").textContent = `${name}`;
         symbol = await tokenRead.symbol();
+        document.getElementById("symbol").textContent = `${symbol}`;
         decimals = await tokenRead.decimals();
+        document.getElementById("decimals").textContent = `${decimals}`;
+        totalSupplyInWei = tokenRead.totalSupply();
+        totalSupply = ethers.formatEther(totalSupplyInWei);
+        document.getElementById("total-supply").textContent = `${totalSupply}`;
+        network = "Polygon Amoy";
+        document.getElementById("network").textContent = `${network}`;
+        if ([name, symbol, decimals, totalSupply, network] !== "undefined" ) {
+        document.getElementById("sale-token-details-updated").textContent = "Sale token details updated";
+           } else {
+               throw new Error ("Failed to update Sale token details");
+           }
+        } catch (error) {
+            console.error("An error occured", error.message);
+        }
     }
+    
+    getSaleTokenDetails ();
     
     
     // Getting GrandSale contract details
@@ -195,13 +234,13 @@
         // User-friendly minimum reward eligibility
         minBuyToReward = await ethers.formatEther(minBuyToRewardInWei);
         document.getElementById("min-buy-to-reward").innerText = `${minBuyToReward}`;
-        
     }
     
- // Establishing MetaMask wallet connection
- connectWallet();
- 
- 
+    // Calling the GrandSale table updating function
+    updateGrandSaleTable ();
+    
+    
+    
   // Buying with POL
   async function buyWithNative(paymentAmount) {
       if (paymentAmount !== "0") {
