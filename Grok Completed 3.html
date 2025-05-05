@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Sale dApp</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Your existing CSS remains unchanged */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #e0e0e0;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        header p {
+            font-size: 1.1rem;
+        }
+        button {
+            background: #00d4ff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, background 0.3s;
+        }
+        button:hover {
+            background: #00b4cc;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        h2, h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        th {
+            background: rgba(0, 0, 0, 0.3);
+            color: #00d4ff;
+        }
+        td a {
+            color: #e0e0e0;
+            text-decoration: none;
+        }
+        td a:hover {
+            color: #00d4ff;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b0b0b0;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border: 1px solid #00d4ff;
+        }
+        .admin-view, .user-view {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+        .status {
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        .success {
+            color: #00e676;
+        }
+        .error {
+            color: #ff5252;
+        }
+        .warning {
+            color: #ffca28;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            header {
+                flex-direction: column;
+                text-align: center;
+            }
+            header p {
+                margin-bottom: 10px;
+            }
+            table {
+                font-size: 0.9rem;
+            }
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <p id="connected-address">Not Connected</p>
+        <div>
+            <button id="admin-button" onclick="switchToAdmin()" style="display: none;">Admin</button>
+            <button id="home-button" onclick="switchToUser()" style="display: none;">Home</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <button id="connect-wallet" onclick="connectWallet()">Connect MetaMask</button>
+
+        <!-- User View -->
+        <div id="user-view" class="section user-view active">
+            <h2>Sale Overview</h2>
+            <table>
+                <tr><th>Sale Status</th><td id="sale-status">Connect wallet</td></tr>
+                <tr><th>Sale Contract</th><td id="sale-contract">Connect wallet</td></tr>
+                <tr><th>Token Contract</th><td id="token-contract">Connect wallet</td></tr>
+                <tr><th>Total Sold</th><td id="total-sold">Connect wallet</td></tr>
+                <tr><th>Total Unsold</th><td id="total-unsold">Connect wallet</td></tr>
+                <tr><th>Total Rewarded</th><td id="total-rewarded">Connect wallet</td></tr>
+                <tr><th>Min. Buy To Reward</th><td id="min-buy-to-reward">Connect wallet</td></tr>
+            </table>
+
+            <h3>Buy Tokens</h3>
+            <div class="form-group">
+                <label for="buy-amount">Amount (in payment token units):</label>
+                <input type="text" id="buy-amount" placeholder="0.1">
+            </div>
+            <div class="form-group">
+                <label for="payment-token">Payment Token:</label>
+                <select id="payment-token">
+                    <option value="0x0000000000000000000000000000000000000000">POL</option>
+                </select>
+            </div>
+            <p id="tokens-to-receive" class="status"></p>
+            <p id="purchase-warning" class="warning"></p>
+            <button id="increase-allowance" style="display: none;" onclick="increaseAllowance()">Increase Allowance</button>
+            <button onclick="buyTokens()">Buy Tokens</button>
+
+            <h3>Transaction History</h3>
+            <table id="transaction-history">
+                <tr><th>Timestamp</th><th>Event</th><th>Details</th><th>Tx Hash</th></tr>
+            </table>
+        </div>
+
+        <!-- Admin View -->
+        <div id="admin-view" class="section admin-view">
+            <h2>Admin Controls</h2>
+            <button onclick="pauseSale()">Pause Sale</button>
+            <button onclick="unpauseSale()">Unpause Sale</button>
+            <div class="form-group">
+                <label for="set-rate-token">Set Rate for Token:</label>
+                <input type="text" id="set-rate-token" placeholder="Token Address">
+                <input type="text" id="set-rate-value" placeholder="Rate (e.g., 100)">
+                <button onclick="setRate()">Set Rate</button>
+            </div>
+            <div class="form-group">
+                <label for="set-reward-token">Set Reward for Token:</label>
+                <input type="text" id="set-reward-token" placeholder="Token Address">
+                <input type="text" id="set-reward-value" placeholder="Reward (e.g., 10)">
+                <button onclick="setReward()">Set Reward</button>
+            </div>
+            <div class="form-group">
+                <label for="add-payment-token">Add Payment Token:</label>
+                <input type="text" id="add-payment-token" placeholder="Token Address">
+                <button onclick="addPaymentToken()">Add Token</button>
+            </div>
+            <div class="form-group">
+                <label for="remove-payment-token">Remove Payment Token:</label>
+                <input type="text" id="remove-payment-token" placeholder="Token Address">
+                <button onclick="removePaymentToken()">Remove Token</button>
+            </div>
+            <div class="form-group">
+                <label for="withdraw-token">Withdraw Funds:</label>
+                <input type="text" id="withdraw-token" placeholder="Token Address (0x0 for POL)">
+                <input type="text" id="withdraw-amount" placeholder="Amount">
+                <button onclick="withdrawFunds()">Withdraw</button>
+            </div>
+        </div>
+
+        <!-- Status Messages -->
+        <div class="status">
+            <p id="status" class="success"></p>
+            <p id="error" class="error"></p>
+        </div>
+    </div>
+
+    <script>
+        // Import Web3.js via CDN
+        const Web3 = window.Web3;
+
+        // Configuration
+        const config = {
+            tokenContractAddress: "0x9a15aca3b949b057ff7c99df82675a4e3f4b553d",
+            saleContractAddress: "0x65ed5aa09d34959214bdbb8b634e486081447e36",
+            chainId: "80002" // Polygon Amoy Testnet
+        };
+
+        // ERC20 ABI
+        const ERC20Abi = [
+            {"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},
+            {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},
+            {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"remaining","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},
+            {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"}
+        ];
+
+        // Sale Contract ABI
+        const saleAbi = [
+            {"inputs":[{"internalType":"address","name":"_token","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
+            {"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"approver","type":"address"},{"indexed":false,"internalType":"address","name":"paymentToken","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Approved","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"uint256","name":"paymentAmount","type":"uint256"}],"name":"FundsSecured","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"minBuyToReward","type":"uint256"}],"name":"MinBuyToRewardRemoved","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"minBuyToReward","type":"uint256"}],"name":"MinBuyToRewardSet","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":false,"internalType":"uint256","name":"tokenAmount","type":"uint256"}],"name":"NotEligible","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Paused","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"paymentToken","type":"address"}],"name":"PaymentTokenAdded","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"paymentToken","type":"address"}],"name":"PaymentTokenRemoved","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"paymentToken","type":"address"}],"name":"RateRemoved","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"rate","type":"uint256"},{"indexed":false,"internalType":"address","name":"paymentToken","type":"address"}],"name":"RateSet","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":true,"internalType":"address","name":"paymentToken","type":"address"},{"indexed":false,"internalType":"uint256","name":"tokenAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"rewardAmount","type":"uint256"}],"name":"RewardGranted","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"paymentToken","type":"address"}],"name":"RewardRemoved","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"paymentToken","type":"address"},{"indexed":false,"internalType":"uint256","name":"reward","type":"uint256"}],"name":"RewardSet","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":false,"internalType":"uint256","name":"tokenAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"paymentAmount","type":"uint256"}],"name":"TokenPurchased","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Unpaused","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"address","name":"owner","type":"address"}],"name":"Withdrawn","type":"event"},
+            {"inputs":[{"internalType":"address","name":"paymentToken","type":"address"}],"name":"addPaymentToken","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[],"name":"buyWithNative","outputs":[],"stateMutability":"payable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"paymentToken","type":"address"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"}],"name":"buyWithToken","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[],"name":"minBuyToReward","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"paymentTokens","outputs":[{"internalType":"bool","name":"isAccepted","type":"bool"},{"internalType":"uint256","name":"rate","type":"uint256"},{"internalType":"uint256","name":"reward","type":"uint256"},{"internalType":"uint256","name":"totalRaised","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"removeMinBuyToReward","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"paymentToken","type":"address"}],"name":"removePaymentToken","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"paymentToken","type":"address"}],"name":"removeRate","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"paymentToken","type":"address"}],"name":"removeReward","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[],"name":"saleToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"uint256","name":"_minBuyToReward","type":"uint256"}],"name":"setMinBuyToReward","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"paymentToken","type":"address"},{"internalType":"uint256","name":"rate","type":"uint256"}],"name":"setRate","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"paymentToken","type":"address"},{"internalType":"uint256","name":"reward","type":"uint256"}],"name":"setReward","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[],"name":"token","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"totalRewarded","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"totalSold","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"_tokenAddress","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[],"stateMutability":"payable","type":"function"},
+            {"stateMutability":"payable","type":"receive"}
+        ];
+
+        // Constants
+        const POL = "0x0000000000000000000000000000000000000000";
+
+        // Global Variables
+        let web3, connectedAddress = null;
+        let tokenContract, saleContract;
+        let isOwner = false;
+        let saleTokenSymbol = "SALE"; // Default, updated on connect
+
+        // Connect Wallet
+        async function connectWallet() {
+            showStatus("Connecting wallet...");
+            if (!window.ethereum) {
+                showError("Please install MetaMask");
+                showStatus("");
+                return;
+            }
+            try {
+                web3 = new Web3(window.ethereum);
+                const chainId = await web3.eth.getChainId();
+                if (chainId.toString() !== config.chainId) {
+                    throw new Error("Switch to Polygon Amoy network");
+                }
+                const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+                connectedAddress = accounts[0];
+
+                document.getElementById("connected-address").textContent = `Connected: ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}`;
+                showStatus("Wallet connected successfully");
+
+                tokenContract = new web3.eth.Contract(ERC20Abi, config.tokenContractAddress);
+                saleContract = new web3.eth.Contract(saleAbi, config.saleContractAddress);
+
+                // Fetch sale token symbol
+                saleTokenSymbol = await tokenContract.methods.symbol().call();
+
+                const owner = await saleContract.methods.owner().call();
+                isOwner = owner.toLowerCase() === connectedAddress.toLowerCase();
+                document.getElementById("admin-button").style.display = isOwner ? "inline" : "none";
+
+                await updateSaleDetails();
+                await updateTransactionHistory();
+                await updatePaymentTokens();
+            } catch (error) {
+                showError(error.message);
+                showStatus("");
+            }
+        }
+
+        // Switch Views
+        function switchToAdmin() {
+            if (!isOwner) return;
+            document.getElementById("user-view").classList.remove("active");
+            document.getElementById("admin-view").classList.add("active");
+            document.getElementById("admin-button").style.display = "none";
+            document.getElementById("home-button").style.display = "inline";
+        }
+
+        function switchToUser() {
+            document.getElementById("admin-view").classList.remove("active");
+            document.getElementById("user-view").classList.add("active");
+            document.getElementById("home-button").style.display = "none";
+            if (isOwner) document.getElementById("admin-button").style.display = "inline";
+        }
+
+        // Update Sale Details
+        async function updateSaleDetails() {
+            if (!saleContract || !tokenContract) return;
+            try {
+                document.getElementById("sale-status").textContent = (await saleContract.methods.paused().call()) ? "Paused" : "Active";
+                document.getElementById("sale-contract").textContent = config.saleContractAddress;
+                document.getElementById("token-contract").textContent = config.tokenContractAddress;
+                document.getElementById("total-sold").textContent = web3.utils.fromWei(await saleContract.methods.totalSold().call(), "ether");
+                document.getElementById("total-unsold").textContent = web3.utils.fromWei(await tokenContract.methods.balanceOf(config.saleContractAddress).call(), "ether");
+                document.getElementById("total-rewarded").textContent = web3.utils.fromWei(await saleContract.methods.totalRewarded().call(), "ether");
+                document.getElementById("min-buy-to-reward").textContent = web3.utils.fromWei(await saleContract.methods.minBuyToReward().call(), "ether");
+            } catch (error) {
+                console.error("Sale details error:", error.message);
+            }
+        }
+
+        // Update Payment Tokens
+        async function updatePaymentTokens() {
+            const select = document.getElementById("payment-token");
+            select.innerHTML = `<option value="${POL}">POL</option>`;
+            try {
+                const paymentTokenList = [
+                    "0x108a44bd8dcffd4e22024715b8b5e03943a6380b",
+                    "0x4e52bca64a88ac1f13b65b923216649c678cb405",
+                    "0x12ef3cc11847c308baaf7cb19b9a69d25e496dae"
+                ];
+                for (const token of paymentTokenList) {
+                    const tokenInfo = await saleContract.methods.paymentTokens(token).call();
+                    if (tokenInfo.isAccepted) {
+                        const tokenContract = new web3.eth.Contract(ERC20Abi, token);
+                        const symbol = await tokenContract.methods.symbol().call();
+                        const option = document.createElement("option");
+                        option.value = token;
+                        option.textContent = `${symbol} (${token.slice(0, 6)}...)`;
+                        select.appendChild(option);
+                    }
+                }
+                select.addEventListener("change", validatePurchaseInput);
+            } catch (error) {
+                console.error("Payment tokens error:", error.message);
+            }
+        }
+
+        // Validate Purchase Input and Display Tokens to Receive
+        async function validatePurchaseInput() {
+            const amountInput = document.getElementById("buy-amount").value;
+            const paymentToken = document.getElementById("payment-token").value;
+            const tokensToReceiveEl = document.getElementById("tokens-to-receive");
+            const warningEl = document.getElementById("purchase-warning");
+            const allowanceButton = document.getElementById("increase-allowance");
+
+            tokensToReceiveEl.textContent = "";
+            warningEl.textContent = "";
+            allowanceButton.style.display = "none";
+
+            if (!saleContract || !connectedAddress || !amountInput || isNaN(amountInput) || parseFloat(amountInput) <= 0) {
+                return;
+            }
+
+            try {
+                const amount = web3.utils.toWei(amountInput, "ether");
+                let saleTokens = "0";
+                let rewardTokens = "0";
+
+                // Fetch contract data
+                const totalUnsold = await tokenContract.methods.balanceOf(config.saleContractAddress).call();
+                const minBuyToReward = await saleContract.methods.minBuyToReward().call();
+                const tokenInfo = await saleContract.methods.paymentTokens(paymentToken).call();
+
+                if (paymentToken === POL) {
+                    saleTokens = amount; // Simplified: 1:1 for POL
+                } else {
+                    const rate = tokenInfo.rate;
+                    if (rate === "0") {
+                        warningEl.textContent = "Invalid rate for selected token";
+                        return;
+                    }
+                    saleTokens = (BigInt(amount) * BigInt(rate) / BigInt(web3.utils.toWei("1", "ether"))).toString();
+                }
+
+                // Check reward eligibility
+                if (BigInt(amount) >= BigInt(minBuyToReward) && BigInt(tokenInfo.reward) > 0) {
+                    rewardTokens = tokenInfo.reward;
+                }
+
+                const totalTokens = (BigInt(saleTokens) + BigInt(rewardTokens)).toString();
+                tokensToReceiveEl.textContent = `You will receive: ${web3.utils.fromWei(totalTokens, "ether")} ${saleTokenSymbol}${BigInt(rewardTokens) > 0 ? ` (includes ${web3.utils.fromWei(rewardTokens, "ether")} reward)` : ""}`;
+
+                // Validate against total unsold
+                if (BigInt(totalTokens) > BigInt(totalUnsold)) {
+                    warningEl.textContent = `Total tokens (${web3.utils.fromWei(totalTokens, "ether")}) exceed available unsold tokens (${web3.utils.fromWei(totalUnsold, "ether")}). Please reduce the amount.`;
+                    return;
+                }
+
+                // Check allowance for ERC20 tokens
+                if (paymentToken !== POL) {
+                    const tokenContract = new web3.eth.Contract(ERC20Abi, paymentToken);
+                    const allowance = await tokenContract.methods.allowance(connectedAddress, config.saleContractAddress).call();
+                    if (BigInt(allowance) < BigInt(amount)) {
+                        allowanceButton.style.display = "inline";
+                    }
+                }
+            } catch (error) {
+                console.error("Validation error:", error.message);
+                warningEl.textContent = "Error calculating tokens. Please try again.";
+            }
+        }
+
+        // Increase Allowance to Unlimited
+        async function increaseAllowance() {
+            const paymentToken = document.getElementById("payment-token").value;
+            if (!saleContract || paymentToken === POL) return;
+
+            try {
+                const tokenContract = new web3.eth.Contract(ERC20Abi, paymentToken);
+                const paymentSymbol = await tokenContract.methods.symbol().call();
+                showStatus(`Increasing allowance for ${paymentSymbol}...`);
+                await tokenContract.methods.approve(config.saleContractAddress, web3.utils.toWei("1000000", "ether")).send({ from: connectedAddress });
+                showStatus(`Allowance increased successfully for ${paymentSymbol}`);
+                document.getElementById("increase-allowance").style.display = "none";
+            } catch (error) {
+                showError(`Allowance increase failed: ${error.message}`);
+                showStatus("");
+            }
+        }
+
+        // Buy Tokens
+        async function buyTokens() {
+            if (!saleContract) return showError("Connect wallet first");
+            const amountInput = document.getElementById("buy-amount").value;
+            const paymentToken = document.getElementById("payment-token").value;
+
+            try {
+                if (!amountInput || isNaN(amountInput) || parseFloat(amountInput) <= 0) {
+                    throw new Error("Enter a valid amount");
+                }
+                const amount = web3.utils.toWei(amountInput, "ether");
+
+                // Validate purchase against contract state
+                const totalUnsold = await tokenContract.methods.balanceOf(config.saleContractAddress).call();
+                const minBuyToReward = await saleContract.methods.minBuyToReward().call();
+                const tokenInfo = await saleContract.methods.paymentTokens(paymentToken).call();
+                let saleTokens = "0";
+                let rewardTokens = "0";
+
+                if (paymentToken === POL) {
+                    saleTokens = amount; // Simplified: 1:1 for POL
+                } else {
+                    const rate = tokenInfo.rate;
+                    if (rate === "0") throw new Error("Invalid rate for selected token");
+                    saleTokens = (BigInt(amount) * BigInt(rate) / BigInt(web3.utils.toWei("1", "ether"))).toString();
+                }
+
+                if (BigInt(amount) >= BigInt(minBuyToReward) && BigInt(tokenInfo.reward) > 0) {
+                    rewardTokens = tokenInfo.reward;
+                }
+
+                const totalTokens = (BigInt(saleTokens) + BigInt(rewardTokens)).toString();
+                if (BigInt(totalTokens) > BigInt(totalUnsold)) {
+                    throw new Error("Purchase exceeds available unsold tokens");
+                }
+
+                // Fetch symbols for status message
+                const paymentSymbol = paymentToken === POL ? "POL" : await new web3.eth.Contract(ERC20Abi, paymentToken).methods.symbol().call();
+                showStatus(`Buying ${web3.utils.fromWei(totalTokens, "ether")} ${saleTokenSymbol} for ${amountInput} ${paymentSymbol}...`);
+
+                if (paymentToken === POL) {
+                    await saleContract.methods.buyWithNative().send({ from: connectedAddress, value: amount });
+                } else {
+                    const tokenContract = new web3.eth.Contract(ERC20Abi, paymentToken);
+                    const allowance = await tokenContract.methods.allowance(connectedAddress, config.saleContractAddress).call();
+                    if (BigInt(allowance) < BigInt(amount)) {
+                        throw new Error("Insufficient allowance. Please increase allowance first.");
+                    }
+                    await saleContract.methods.buyWithToken(paymentToken, amount).send({ from: connectedAddress });
+                }
+                showStatus(`Successfully purchased ${web3.utils.fromWei(totalTokens, "ether")} ${saleTokenSymbol}`);
+                await updateSaleDetails();
+                await updateTransactionHistory();
+                document.getElementById("buy-amount").value = "";
+                validatePurchaseInput();
+            } catch (error) {
+                showError(`Purchase failed: ${error.message}`);
+                showStatus("");
+            }
+        }
+
+        // Update Transaction History
+        async function updateTransactionHistory() {
+            if (!saleContract || !connectedAddress) return;
+            const table = document.getElementById("transaction-history");
+            table.innerHTML = "<tr><th>Timestamp</th><th>Event</th><th>Details</th><th>Tx Hash</th></tr>";
+
+            try {
+                const events = [
+                    { name: "Approved", filter: { approver: connectedAddress } },
+                    { name: "FundsSecured", filter: { owner: connectedAddress } },
+                    { name: "MinBuyToRewardRemoved", filter: {} },
+                    { name: "MinBuyToRewardSet", filter: {} },
+                    { name: "NotEligible", filter: { buyer: connectedAddress } },
+                    { name: "Paused", filter: { account: connectedAddress } },
+                    { name: "PaymentTokenAdded", filter: {} },
+                    { name: "PaymentTokenRemoved", filter: {} },
+                    { name: "RateRemoved", filter: {} },
+                    { name: "RateSet", filter: {} },
+                    { name: "RewardGranted", filter: { buyer: connectedAddress } },
+                    { name: "RewardRemoved", filter: {} },
+                    { name: "RewardSet", filter: {} },
+                    { name: "TokenPurchased", filter: { buyer: connectedAddress } },
+                    { name: "Unpaused", filter: { account: connectedAddress } },
+                    { name: "Withdrawn", filter: { owner: connectedAddress } }
+                ];
+
+                const eventPromises = events.map(event => saleContract.getPastEvents(event.name, { fromBlock: 0, toBlock: "latest", filter: event.filter }));
+                const eventArrays = await Promise.all(eventPromises);
+                const allEvents = eventArrays.flat().sort((a, b) => b.blockNumber - a.blockNumber);
+
+                for (const event of allEvents) {
+                    const block = await web3.eth.getBlock(event.blockNumber);
+                    const timestamp = new Date(block.timestamp * 1000).toLocaleString();
+                    let eventType, details;
+
+                    switch (event.event) {
+                        case "Approved":
+                            eventType = "Approval";
+                            details = `Approved ${web3.utils.fromWei(event.returnValues.amount, "ether")} for ${event.returnValues.paymentToken.slice(0, 6)}...`;
+                            break;
+                        case "FundsSecured":
+                            eventType = "Funds Secured";
+                            details = `Secured ${web3.utils.fromWei(event.returnValues.paymentAmount, "ether")} tokens`;
+                            break;
+                        case "MinBuyToRewardRemoved":
+                            if (!isOwner) continue;
+                            eventType = "Min Buy Removed";
+                            details = `Removed min buy: ${web3.utils.fromWei(event.returnValues.minBuyToReward, "ether")}`;
+                            break;
+                        case "MinBuyToRewardSet":
+                            if (!isOwner) continue;
+                            eventType = "Min Buy Set";
+                            details = `Set min buy: ${web3.utils.fromWei(event.returnValues.minBuyToReward, "ether")}`;
+                            break;
+                        case "NotEligible":
+                            eventType = "Not Eligible";
+                            details = `Purchase of ${web3.utils.fromWei(event.returnValues.tokenAmount, "ether")} not eligible for reward`;
+                            break;
+                        case "Paused":
+                            eventType = "Paused";
+                            details = "Sale paused";
+                            break;
+                        case "PaymentTokenAdded":
+                            if (!isOwner) continue;
+                            eventType = "Token Added";
+                            details = `Added payment token: ${event.returnValues.paymentToken.slice(0, 6)}...`;
+                            break;
+                        case "PaymentTokenRemoved":
+                            if (!isOwner) continue;
+                            eventType = "Token Removed";
+                            details = `Removed payment token: ${event.returnValues.paymentToken.slice(0, 6)}...`;
+                            break;
+                        case "RateRemoved":
+                            if (!isOwner) continue;
+                            eventType = "Rate Removed";
+                            details = `Removed rate for ${event.returnValues.paymentToken.slice(0, 6)}...`;
+                            break;
+                        case "RateSet":
+                            if (!isOwner) continue;
+                            eventType = "Rate Set";
+                            details = `Set rate ${event.returnValues.rate} for ${event.returnValues.paymentToken.slice(0, 6)}...`;
+                            break;
+                        case "RewardGranted":
+                            eventType = "Reward Granted";
+                            details = `Received ${web3.utils.fromWei(event.returnValues.rewardAmount, "ether")} reward`;
+                            break;
+                        case "RewardRemoved":
+                            if (!isOwner) continue;
+                            eventType = "Reward Removed";
+                            details = `Removed reward for ${event.returnValues.paymentToken.slice(0, 6)}...`;
+                            break;
+                        case "RewardSet":
+                            if (!isOwner) continue;
+                            eventType = "Reward Set";
+                            details = `Set reward ${web3.utils.fromWei(event.returnValues.reward, "ether")} for ${event.returnValues.paymentToken.slice(0, 6)}...`;
+                            break;
+                        case "TokenPurchased":
+                            eventType = "Purchase";
+                            details = `Purchased ${web3.utils.fromWei(event.returnValues.tokenAmount, "ether")} for ${web3.utils.fromWei(event.returnValues.paymentAmount, "ether")}`;
+                            break;
+                        case "Unpaused":
+                            eventType = "Unpaused";
+                            details = "Sale unpaused";
+                            break;
+                        case "Withdrawn":
+                            eventType = "Withdrawn";
+                            details = `Withdrew ${web3.utils.fromWei(event.returnValues.amount, "ether")} from ${event.returnValues.token.slice(0, 6)}...`;
+                            break;
+                        default:
+                            continue;
+                    }
+
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${timestamp}</td>
+                        <td>${eventType}</td>
+                        <td>${details}</td>
+                        <td><a href="https://amoy.polygonscan.com/tx/${event.transactionHash}" target="_blank">${event.transactionHash.slice(0, 6)}...</a></td>
+                    `;
+                    table.appendChild(row);
+                }
+            } catch (error) {
+                console.error("Transaction history error:", error.message);
+                showError(`Failed to load transaction history: ${error.message}`);
+            }
+        }
+
+        // Admin Functions
+        async function pauseSale() {
+            if (!saleContract || !isOwner) return;
+            try {
+                showStatus("Pausing sale...");
+                await saleContract.methods.pause().send({ from: connectedAddress });
+                showStatus("Sale paused successfully");
+                await updateSaleDetails();
+            } catch (error) {
+                showError(`Pause failed: ${error.message}`);
+                showStatus("");
+            }
+        }
+
+        async function unpauseSale() {
+            if (!saleContract || !isOwner) return;
+            try {
+                showStatus("Unpausing sale...");
+                await saleContract.methods.unpause().send({ from: connectedAddress });
+                showStatus("Sale unpaused successfully");
+                await updateSaleDetails();
+            } catch (error) {
+                showError(`Unpause failed: ${error.message}`);
+                showStatus("");
+            }
+        }
+
+        async function setRate() {
+            const token = document.getElementById("set-rate-token").value;
+            const rate = document.getElementById("set-rate-value").value;
+            if (!validateInput(token, rate)) return;
+            try {
+                showStatus(`Setting rate for token ${token.slice(0, 6)}...`);
+                await saleContract.methods.setRate(token, web3.utils.toWei(rate, "ether")).send({ from: connectedAddress });
+                showStatus("Rate set successfully");
+                await updateTransactionHistory();
+            } catch (error) {
+                showError(`Set rate failed: ${error.message}`);
+                showStatus("");
+            }
+        }
+
+        async function setReward() {
+            const token = document.getElementById("set-reward-token").value;
+            const reward = document.getElementById("set-reward-value").value;
+            if (!validateInput(token, reward)) return;
+            try {
+                showStatus(`Setting reward for token ${token.slice(0, 6)}...`);
+                await saleContract.methods.setReward(token, web3.utils.toWei(reward, "ether")).send({ from: connectedAddress });
+                showStatus("Reward set successfully");
+                await updateTransactionHistory();
+            } catch (error) {
+                showError(`Set reward failed: ${error.message}`);
+                showStatus("");
+            }
+        }
+
+        async function addPaymentToken() {
+            const token = document.getElementById("add-payment-token").value;
+            if (!web3.utils.isAddress(token)) return showError("Invalid token address");
+            try {
+                showStatus(`Adding payment token ${token.slice(0, 6)}...`);
+                await saleContract.methods.addPaymentToken(token).send({ from: connectedAddress });
+                showStatus("Payment token added successfully");
+                await updatePaymentTokens();
+                await updateTransactionHistory();
+            } catch (error) {
+                showError(`Add token failed: ${error.message}`);
+                showStatus("");
+            }
+        }
+
+        async function removePaymentToken() {
+            const token = document.getElementById("remove-payment-token").value;
+            if (!web3.utils.isAddress(token)) return showError("Invalid token address");
+            try {
+                showStatus(`Removing payment token ${token.slice(0, 6)}...`);
+                await saleContract.methods.removePaymentToken(token).send({ from: connectedAddress });
+                showStatus("Payment token removed successfully");
+                await updatePaymentTokens();
+                await updateTransactionHistory();
+            } catch (error) {
+                showError(`Remove token failed: ${error.message}`);
+                showStatus("");
+            }
+        }
+
+        async function withdrawFunds() {
+            const token = document.getElementById("withdraw-token").value;
+            const amount = document.getElementById("withdraw-amount").value;
+            if (!web3.utils.isAddress(token) || !amount || isNaN(amount)) return showError("Invalid input");
+            try {
+                const symbol = token === POL ? "POL" : await new web3.eth.Contract(ERC20Abi, token).methods.symbol().call();
+                showStatus(`Withdrawing ${amount} ${symbol}...`);
+                await saleContract.methods.withdraw(token, web3.utils.toWei(amount, "ether")).send({ from: connectedAddress });
+                showStatus(`Successfully withdrew ${amount} ${symbol}`);
+                await updateTransactionHistory();
+            } catch (error) {
+                showError(`Withdraw failed: ${error.message}`);
+                showStatus("");
+            }
+        }
+
+        // Helper Functions
+        function validateInput(address, value) {
+            if (!web3.utils.isAddress(address) || !value || isNaN(value)) {
+                showError("Invalid input");
+                return false;
+            }
+            return true;
+        }
+
+        function showStatus(message) {
+            document.getElementById("status").textContent = message;
+            document.getElementById("error").textContent = "";
+        }
+
+        function showError(message) {
+            document.getElementById("error").textContent = message;
+            document.getElementById("status").textContent = "";
+        }
+
+        // Initialize Input Validation
+        document.getElementById("buy-amount").addEventListener("input", validatePurchaseInput);
+        document.getElementById("payment-token").addEventListener("change", validatePurchaseInput);
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/4.3.0/web3.min.js"></script>
+</body>
+</html>
