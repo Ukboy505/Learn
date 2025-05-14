@@ -438,7 +438,7 @@
             saleTokenSymbol = await tokenContract.methods.symbol().call();
             const owner = await saleContract.methods.owner().call();
             isOwner = owner.toLowerCase() === connectedAddress.toLowerCase();
-            document.getElementById("connected-address").textContent = `Connected: ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}`;
+            document.getElementById("connected-address").textContent = `Connected: ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-6)}`;
             document.getElementById("connect-wallet").style.display = "none";
             document.getElementById("switch-account-btn").style.display = "inline-block";
             document.getElementById("disconnect-wallet-btn").style.display = "inline-block";
@@ -1038,7 +1038,7 @@
                     const isAdminEvent = ["MinBuyToRewardRemoved", "MinBuyToRewardSet", "PaymentTokenAdded", "PaymentTokenRemoved", "RateRemoved", "RateSet", "RewardRemoved", "RewardSet"].includes(event.event);
                     if (!isOwner && isAdminEvent) continue;
                     const block = await web3.eth.getBlock(event.blockNumber);
-                    const timestamp = new Date(block.timestamp * 1000).toLocaleString();
+                    const timestamp = new Date(block.timestamp * 1000)//.toLocaleString();
                     let eventType, details;
                     switch (event.event) {
                         case "Approved":
@@ -1185,7 +1185,7 @@
             const table = document.getElementById("transaction-history");
             const row = document.createElement("tr");
             row.className = isSuccess ? "success" : "error";
-            const timestamp = new Date().toLocaleString();
+            const timestamp = new Date(block.timestamp * 1000)//.toLocaleString();
             const txLink = txHash ? `<a href="https://amoy.polygonscan.com/tx/${txHash}" target="_blank">${txHash.slice(0, 6)}...</a>` : "";
             row.innerHTML = `<td>${timestamp}</td><td>${eventName}</td><td>${details}</td><td>${txLink}</td>`;
             table.insertBefore(row, table.children[1]);
